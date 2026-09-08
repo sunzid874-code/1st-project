@@ -1,0 +1,1071 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>J.A.R.V.I.S — Just A Rather Very Intelligent System</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Rajdhani:wght@300;400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#010509;
+  --hud:#0a1628;
+  --panel:rgba(0,180,255,0.04);
+  --panel-border:rgba(0,180,255,0.18);
+  --arc:#00b4ff;
+  --arc2:#00d4ff;
+  --arc-glow:rgba(0,180,255,0.35);
+  --arc-deep:rgba(0,180,255,0.08);
+  --gold:#ffd700;
+  --red:#ff3b3b;
+  --green:#00ff9d;
+  --text:#c8e8ff;
+  --muted:rgba(200,232,255,0.45);
+  --white:#ffffff;
+}
+html,body{height:100%;overflow:hidden;cursor:crosshair}
+body{
+  font-family:'Rajdhani',sans-serif;
+  background:var(--bg);
+  color:var(--text);
+  position:relative;
+}
+
+/* ── SCANLINES & NOISE ── */
+body::before{
+  content:'';position:fixed;inset:0;z-index:1000;pointer-events:none;
+  background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.08) 2px,rgba(0,0,0,0.08) 4px);
+}
+body::after{
+  content:'';position:fixed;inset:0;z-index:999;pointer-events:none;
+  background:radial-gradient(ellipse at center,transparent 40%,rgba(0,0,0,0.7) 100%);
+}
+
+/* ── GRID BG ── */
+.grid-bg{
+  position:fixed;inset:0;z-index:0;
+  background-image:
+    linear-gradient(rgba(0,180,255,0.04) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(0,180,255,0.04) 1px,transparent 1px);
+  background-size:50px 50px;
+  animation:gridShift 20s linear infinite;
+}
+@keyframes gridShift{from{background-position:0 0}to{background-position:50px 50px}}
+
+/* ── CORNER BRACKETS ── */
+.corner{position:fixed;width:60px;height:60px;z-index:50;pointer-events:none}
+.corner::before,.corner::after{content:'';position:absolute;background:var(--arc)}
+.corner::before{width:2px;height:100%}
+.corner::after{height:2px;width:100%}
+.corner.tl{top:16px;left:16px}.corner.tl::before{top:0;left:0}.corner.tl::after{top:0;left:0}
+.corner.tr{top:16px;right:16px;transform:scaleX(-1)}
+.corner.tr::before{top:0;left:0}.corner.tr::after{top:0;left:0}
+.corner.bl{bottom:16px;left:16px;transform:scaleY(-1)}
+.corner.bl::before{bottom:0;left:0}.corner.bl::after{bottom:0;left:0}
+.corner.br{bottom:16px;right:16px;transform:scale(-1)}
+.corner.br::before{bottom:0;left:0}.corner.br::after{bottom:0;left:0}
+
+/* ── LAYOUT ── */
+.hud{
+  position:fixed;inset:0;z-index:10;
+  display:grid;
+  grid-template-rows:64px 1fr 120px;
+  grid-template-columns:280px 1fr 280px;
+  gap:0;
+  padding:16px;
+}
+
+/* ── TOP BAR ── */
+.topbar{
+  grid-column:1/-1;
+  display:flex;align-items:center;justify-content:space-between;
+  border-bottom:1px solid var(--panel-border);
+  padding:0 16px 12px;
+}
+.topbar-left{display:flex;align-items:center;gap:16px}
+.jarvis-logo{
+  font-family:'Orbitron',monospace;font-size:1.4rem;font-weight:900;
+  color:var(--arc);letter-spacing:0.15em;
+  text-shadow:0 0 20px var(--arc-glow),0 0 40px var(--arc-glow);
+}
+.jarvis-subtitle{
+  font-family:'Share Tech Mono',monospace;font-size:11px;
+  color:var(--muted);letter-spacing:0.12em;
+}
+.status-row{display:flex;gap:16px;align-items:center}
+.status-pill{
+  display:flex;align-items:center;gap:6px;
+  font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--muted);
+}
+.dot{width:6px;height:6px;border-radius:50%;background:var(--green);
+  animation:pulse 2s infinite;box-shadow:0 0 6px var(--green)}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
+#clock{font-family:'Orbitron',monospace;font-size:13px;color:var(--arc);letter-spacing:0.1em}
+
+/* ── LEFT PANEL ── */
+.panel-left{
+  grid-row:2;grid-column:1;
+  display:flex;flex-direction:column;gap:12px;
+  padding-right:12px;
+  border-right:1px solid var(--panel-border);
+  padding-top:12px;overflow-y:auto;
+}
+
+/* ── CENTER ── */
+.panel-center{
+  grid-row:2;grid-column:2;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  position:relative;padding:12px 24px;
+}
+
+/* ── RIGHT PANEL ── */
+.panel-right{
+  grid-row:2;grid-column:3;
+  display:flex;flex-direction:column;gap:12px;
+  padding-left:12px;
+  border-left:1px solid var(--panel-border);
+  padding-top:12px;overflow-y:auto;
+}
+
+/* ── BOTTOM BAR ── */
+.bottombar{
+  grid-column:1/-1;
+  border-top:1px solid var(--panel-border);
+  padding-top:12px;
+  display:flex;flex-direction:column;gap:8px;
+}
+
+/* ── HUD WIDGET ── */
+.widget{
+  background:var(--panel);
+  border:1px solid var(--panel-border);
+  border-radius:4px;
+  padding:12px;
+  position:relative;overflow:hidden;
+}
+.widget::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,transparent,var(--arc),transparent);
+  opacity:0.6;
+}
+.widget-title{
+  font-family:'Orbitron',monospace;font-size:9px;font-weight:600;
+  color:var(--arc);letter-spacing:0.15em;text-transform:uppercase;
+  margin-bottom:8px;display:flex;align-items:center;gap:6px;
+}
+.widget-title::before{content:'//';opacity:0.5}
+
+/* ── ARC REACTOR (CENTER) ── */
+.arc-container{position:relative;width:240px;height:240px;margin-bottom:16px;flex-shrink:0}
+.arc-ring{
+  position:absolute;inset:0;border-radius:50%;
+  border:1px solid rgba(0,180,255,0.2);
+  animation:spin linear infinite;
+}
+.arc-ring:nth-child(1){animation-duration:8s;border-top-color:var(--arc);border-width:2px}
+.arc-ring:nth-child(2){inset:12px;animation-duration:12s;animation-direction:reverse;border-right-color:var(--arc2);border-width:1px}
+.arc-ring:nth-child(3){inset:24px;animation-duration:6s;border-bottom-color:var(--arc);border-width:2px}
+.arc-ring:nth-child(4){inset:36px;animation-duration:16s;animation-direction:reverse;border-left-color:var(--arc2);border-width:1px}
+@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+.arc-core{
+  position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+  width:100px;height:100px;border-radius:50%;
+  background:radial-gradient(circle,rgba(0,212,255,0.6) 0%,rgba(0,180,255,0.3) 40%,rgba(0,180,255,0.05) 100%);
+  box-shadow:0 0 30px var(--arc-glow),0 0 60px rgba(0,180,255,0.2),inset 0 0 20px rgba(0,180,255,0.3);
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;transition:all 0.3s;
+}
+.arc-core:hover{
+  box-shadow:0 0 50px var(--arc),0 0 100px var(--arc-glow),inset 0 0 30px rgba(0,180,255,0.5);
+}
+.arc-core.listening{
+  background:radial-gradient(circle,rgba(0,255,157,0.6) 0%,rgba(0,255,157,0.3) 40%,rgba(0,255,157,0.05) 100%);
+  box-shadow:0 0 50px rgba(0,255,157,0.8),0 0 100px rgba(0,255,157,0.3),inset 0 0 30px rgba(0,255,157,0.4);
+  animation:reactorPulse 1s ease-in-out infinite;
+}
+.arc-core.thinking{
+  animation:reactorThink 0.5s ease-in-out infinite alternate;
+}
+.arc-core.speaking{
+  animation:reactorSpeak 0.3s ease-in-out infinite alternate;
+}
+@keyframes reactorPulse{0%,100%{transform:translate(-50%,-50%) scale(1)}50%{transform:translate(-50%,-50%) scale(1.08)}}
+@keyframes reactorThink{from{box-shadow:0 0 30px var(--arc-glow)}to{box-shadow:0 0 80px var(--arc),0 0 120px var(--arc-glow)}}
+@keyframes reactorSpeak{from{transform:translate(-50%,-50%) scale(1)}to{transform:translate(-50%,-50%) scale(1.05)}}
+.arc-icon{font-size:2.2rem;user-select:none}
+.arc-label{
+  font-family:'Orbitron',monospace;font-size:9px;color:var(--arc);
+  letter-spacing:0.2em;text-align:center;margin-top:8px;
+}
+
+/* ── STATUS DISPLAY ── */
+.status-display{
+  width:100%;max-width:440px;
+  background:rgba(0,180,255,0.04);
+  border:1px solid var(--panel-border);border-radius:4px;padding:12px 16px;
+  min-height:54px;display:flex;flex-direction:column;gap:4px;
+}
+#status-text{
+  font-family:'Share Tech Mono',monospace;font-size:12px;color:var(--arc);
+  letter-spacing:0.05em;min-height:18px;
+}
+#status-sub{font-family:'Rajdhani',sans-serif;font-size:11px;color:var(--muted)}
+
+/* ── CHAT / RESPONSE ── */
+.chat-area{
+  width:100%;max-width:680px;flex:1;overflow-y:auto;
+  display:flex;flex-direction:column;gap:8px;padding:8px 0;
+  min-height:0;
+}
+.chat-area::-webkit-scrollbar{width:3px}
+.chat-area::-webkit-scrollbar-thumb{background:var(--panel-border);border-radius:2px}
+.msg{
+  padding:10px 14px;border-radius:3px;font-size:14px;line-height:1.6;
+  max-width:100%;position:relative;
+}
+.msg-user{
+  background:rgba(0,180,255,0.08);border:1px solid rgba(0,180,255,0.2);
+  border-left:3px solid var(--arc);align-self:flex-end;
+  font-family:'Rajdhani',sans-serif;color:var(--text);
+}
+.msg-user::before{content:'YOU  ';font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--muted);display:block;margin-bottom:3px;letter-spacing:0.1em}
+.msg-jarvis{
+  background:rgba(0,20,40,0.8);border:1px solid var(--panel-border);
+  border-left:3px solid var(--gold);align-self:flex-start;
+  font-family:'Rajdhani',sans-serif;color:var(--text);
+}
+.msg-jarvis::before{content:'J.A.R.V.I.S  ';font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--gold);display:block;margin-bottom:3px;letter-spacing:0.1em}
+.msg-sys{
+  font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--muted);
+  text-align:center;letter-spacing:0.08em;border:none;background:none;padding:4px 0;
+}
+
+/* ── INPUT BAR ── */
+.input-zone{
+  display:flex;gap:10px;align-items:center;width:100%;max-width:680px;
+  margin:0 auto;
+}
+.input-field{
+  flex:1;background:rgba(0,180,255,0.05);
+  border:1px solid var(--panel-border);border-radius:3px;
+  color:var(--text);font-family:'Rajdhani',sans-serif;font-size:14px;
+  padding:10px 16px;outline:none;transition:border-color 0.2s;
+  letter-spacing:0.03em;
+}
+.input-field:focus{border-color:var(--arc);box-shadow:0 0 12px rgba(0,180,255,0.15)}
+.input-field::placeholder{color:var(--muted)}
+.btn-hud{
+  padding:10px 20px;border-radius:3px;border:1px solid var(--panel-border);
+  background:rgba(0,180,255,0.08);color:var(--arc);
+  font-family:'Orbitron',monospace;font-size:10px;font-weight:600;
+  cursor:pointer;transition:all 0.2s;letter-spacing:0.1em;
+  white-space:nowrap;
+}
+.btn-hud:hover{background:rgba(0,180,255,0.18);border-color:var(--arc);box-shadow:0 0 12px var(--arc-glow)}
+.btn-hud.active{background:rgba(0,255,157,0.15);border-color:var(--green);color:var(--green);box-shadow:0 0 16px rgba(0,255,157,0.3)}
+.btn-hud.danger{border-color:var(--red);color:var(--red);background:rgba(255,59,59,0.08)}
+
+/* ── WAVEFORM ── */
+.waveform{
+  display:flex;gap:3px;align-items:center;justify-content:center;
+  height:30px;margin:4px 0;
+}
+.wave-bar{
+  width:3px;border-radius:2px;background:var(--arc);
+  transition:height 0.1s;
+  opacity:0.7;
+}
+.waveform.active .wave-bar{animation:wave 0.8s ease-in-out infinite}
+.wave-bar:nth-child(1){animation-delay:0s;height:4px}
+.wave-bar:nth-child(2){animation-delay:0.1s;height:8px}
+.wave-bar:nth-child(3){animation-delay:0.2s;height:14px}
+.wave-bar:nth-child(4){animation-delay:0.3s;height:20px}
+.wave-bar:nth-child(5){animation-delay:0.2s;height:24px}
+.wave-bar:nth-child(6){animation-delay:0.1s;height:20px}
+.wave-bar:nth-child(7){animation-delay:0s;height:14px}
+.wave-bar:nth-child(8){animation-delay:0.1s;height:8px}
+.wave-bar:nth-child(9){animation-delay:0.2s;height:4px}
+@keyframes wave{0%,100%{transform:scaleY(1)}50%{transform:scaleY(2.5)}}
+
+/* ── SYSTEM METRICS ── */
+.metric-row{display:flex;justify-content:space-between;align-items:center;margin:4px 0}
+.metric-label{font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--muted);letter-spacing:0.08em}
+.metric-val{font-family:'Orbitron',monospace;font-size:11px;color:var(--arc)}
+.bar-bg{height:3px;background:rgba(0,180,255,0.1);border-radius:2px;flex:1;margin:0 8px}
+.bar-fill{height:100%;border-radius:2px;background:var(--arc);transition:width 1s ease}
+
+/* ── SUGGESTION CARDS ── */
+.suggestion-item{
+  background:rgba(0,180,255,0.03);
+  border:1px solid rgba(0,180,255,0.1);
+  border-radius:3px;padding:8px 10px;
+  font-size:12px;color:var(--muted);
+  cursor:pointer;transition:all 0.2s;
+  line-height:1.5;
+}
+.suggestion-item:hover{background:rgba(0,180,255,0.08);border-color:var(--arc);color:var(--text)}
+
+/* ── SCROLL ── */
+.panel-left::-webkit-scrollbar,.panel-right::-webkit-scrollbar{width:2px}
+.panel-left::-webkit-scrollbar-thumb,.panel-right::-webkit-scrollbar-thumb{background:var(--panel-border)}
+
+/* ── BOOT SCREEN ── */
+#boot-screen{
+  position:fixed;inset:0;z-index:9999;
+  background:var(--bg);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;
+}
+.boot-logo{
+  font-family:'Orbitron',monospace;font-size:3rem;font-weight:900;
+  color:var(--arc);text-shadow:0 0 40px var(--arc-glow),0 0 80px rgba(0,180,255,0.3);
+  letter-spacing:0.3em;animation:bootPulse 1s ease-in-out infinite alternate;
+}
+@keyframes bootPulse{from{opacity:0.6}to{opacity:1}}
+.boot-log{
+  font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--muted);
+  letter-spacing:0.08em;max-width:400px;text-align:center;line-height:2;
+}
+.boot-bar-bg{width:300px;height:2px;background:rgba(0,180,255,0.15);border-radius:1px}
+.boot-bar-fill{height:100%;background:var(--arc);border-radius:1px;
+  box-shadow:0 0 8px var(--arc);animation:bootLoad 3s linear forwards}
+@keyframes bootLoad{from{width:0}to{width:100%}}
+
+/* ── API KEY SETUP ── */
+#setup-screen{
+  position:fixed;inset:0;z-index:9998;
+  background:var(--bg);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;
+  display:none;
+}
+.setup-card{
+  background:var(--panel);border:1px solid var(--panel-border);
+  border-radius:6px;padding:32px;max-width:480px;width:90%;
+}
+.setup-title{font-family:'Orbitron',monospace;font-size:1.1rem;color:var(--arc);margin-bottom:8px;letter-spacing:0.1em}
+.setup-desc{font-size:13px;color:var(--muted);line-height:1.7;margin-bottom:20px}
+.setup-input{
+  width:100%;background:rgba(0,180,255,0.05);
+  border:1px solid var(--panel-border);border-radius:3px;
+  color:var(--text);font-family:'Share Tech Mono',monospace;font-size:12px;
+  padding:10px 14px;outline:none;margin-bottom:12px;
+  transition:border-color 0.2s;
+}
+.setup-input:focus{border-color:var(--arc)}
+.setup-label{font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--muted);margin-bottom:6px;display:block;letter-spacing:0.08em}
+.setup-link{color:var(--arc);font-size:12px;text-decoration:none}
+.setup-link:hover{text-decoration:underline}
+
+/* ── VOICE MODAL ── */
+#voice-modal{
+  position:fixed;inset:0;z-index:500;
+  background:rgba(0,0,0,0.7);backdrop-filter:blur(4px);
+  display:none;align-items:center;justify-content:center;
+}
+.voice-box{
+  background:#010d1a;border:1px solid var(--arc);
+  border-radius:8px;padding:32px;text-align:center;
+  box-shadow:0 0 60px var(--arc-glow);
+}
+.voice-title{font-family:'Orbitron',monospace;font-size:1rem;color:var(--arc);letter-spacing:0.15em;margin-bottom:16px}
+#voice-transcript{font-family:'Rajdhani',sans-serif;font-size:15px;color:var(--text);min-height:20px;margin:12px 0}
+
+/* ── PROACTIVE BADGE ── */
+.pro-badge{
+  display:inline-block;background:rgba(255,215,0,0.1);border:1px solid rgba(255,215,0,0.3);
+  color:var(--gold);font-size:9px;font-family:'Share Tech Mono',monospace;
+  padding:2px 8px;border-radius:2px;letter-spacing:0.08em;margin-bottom:4px;
+}
+
+/* ── TYPEWRITER ── */
+.typewriter{overflow:hidden;white-space:pre-wrap}
+</style>
+</head>
+<body>
+
+<!-- BOOT SCREEN -->
+<div id="boot-screen">
+  <div class="boot-logo">J.A.R.V.I.S</div>
+  <div class="boot-log" id="boot-log">Initializing core systems...</div>
+  <div class="boot-bar-bg"><div class="boot-bar-fill" id="boot-bar"></div></div>
+</div>
+
+<!-- SETUP SCREEN -->
+<div id="setup-screen">
+  <div class="setup-card">
+    <div class="setup-title">// SYSTEM CONFIGURATION</div>
+    <div class="setup-desc">J.A.R.V.I.S requires an Anthropic API key to power its intelligence core. Your key is stored only on your local device — it never leaves your machine.</div>
+    <label class="setup-label">ANTHROPIC API KEY</label>
+    <input class="setup-input" type="password" id="api-key-input" placeholder="sk-ant-api03-...">
+    <label class="setup-label" style="margin-top:8px">YOUR NAME (Sir/Ma'am will use this)</label>
+    <input class="setup-input" type="text" id="user-name-input" placeholder="e.g. Tony, Stark, Boss...">
+    <button class="btn-hud" style="width:100%;margin-top:8px;padding:12px" onclick="saveSetup()">INITIALIZE J.A.R.V.I.S</button>
+    <div style="margin-top:16px;font-size:12px;color:var(--muted)">
+      Get your free API key at <a href="https://console.anthropic.com" target="_blank" class="setup-link">console.anthropic.com</a>
+    </div>
+  </div>
+</div>
+
+<!-- VOICE MODAL -->
+<div id="voice-modal">
+  <div class="voice-box">
+    <div class="voice-title">// AUDIO INPUT ACTIVE</div>
+    <div class="waveform active" id="voice-wave">
+      <div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div>
+      <div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div>
+      <div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div>
+    </div>
+    <div id="voice-transcript">Listening...</div>
+    <button class="btn-hud danger" style="margin-top:16px" onclick="stopVoiceInput()">STOP ■</button>
+  </div>
+</div>
+
+<!-- BACKGROUND -->
+<div class="grid-bg"></div>
+<div class="corner tl"></div><div class="corner tr"></div>
+<div class="corner bl"></div><div class="corner br"></div>
+
+<!-- MAIN HUD -->
+<div class="hud" id="main-hud" style="opacity:0;transition:opacity 1s">
+
+  <!-- TOP BAR -->
+  <div class="topbar">
+    <div class="topbar-left">
+      <div>
+        <div class="jarvis-logo">J.A.R.V.I.S</div>
+        <div class="jarvis-subtitle">JUST A RATHER VERY INTELLIGENT SYSTEM · v7.4.1</div>
+      </div>
+    </div>
+    <div class="status-row">
+      <div class="status-pill"><div class="dot"></div><span id="sys-status">ALL SYSTEMS NOMINAL</span></div>
+      <div style="width:1px;height:20px;background:var(--panel-border)"></div>
+      <div id="clock"></div>
+      <div style="width:1px;height:20px;background:var(--panel-border)"></div>
+      <button class="btn-hud" style="padding:5px 12px;font-size:9px" onclick="showSetup()">⚙ CONFIG</button>
+    </div>
+  </div>
+
+  <!-- LEFT PANEL -->
+  <div class="panel-left">
+
+    <div class="widget">
+      <div class="widget-title">SYSTEM METRICS</div>
+      <div class="metric-row">
+        <span class="metric-label">CPU</span>
+        <div class="bar-bg"><div class="bar-fill" id="cpu-bar" style="width:42%"></div></div>
+        <span class="metric-val" id="cpu-val">42%</span>
+      </div>
+      <div class="metric-row">
+        <span class="metric-label">RAM</span>
+        <div class="bar-bg"><div class="bar-fill" id="ram-bar" style="width:61%;background:var(--gold)"></div></div>
+        <span class="metric-val" id="ram-val" style="color:var(--gold)">61%</span>
+      </div>
+      <div class="metric-row">
+        <span class="metric-label">NETWORK</span>
+        <div class="bar-bg"><div class="bar-fill" id="net-bar" style="width:28%;background:var(--green)"></div></div>
+        <span class="metric-val" id="net-val" style="color:var(--green)">28%</span>
+      </div>
+    </div>
+
+    <div class="widget">
+      <div class="widget-title">WEATHER MODULE</div>
+      <div id="weather-display" style="font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--muted);line-height:2">
+        <div style="font-size:1.6rem;text-align:center;margin:4px 0" id="weather-icon">🌤</div>
+        <div class="metric-row"><span class="metric-label">TEMP</span><span class="metric-val" id="w-temp">--°C</span></div>
+        <div class="metric-row"><span class="metric-label">CONDITION</span><span style="font-size:10px;color:var(--text)" id="w-cond">Fetching...</span></div>
+        <div class="metric-row"><span class="metric-label">HUMIDITY</span><span class="metric-val" id="w-hum">--%</span></div>
+      </div>
+    </div>
+
+    <div class="widget">
+      <div class="widget-title">QUICK COMMANDS</div>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <div class="suggestion-item" onclick="quickCmd('What time is it?')">⏰ Current time & date</div>
+        <div class="suggestion-item" onclick="quickCmd('What\'s the weather like today?')">🌤 Weather briefing</div>
+        <div class="suggestion-item" onclick="quickCmd('Give me a productivity tip for today')">⚡ Productivity tip</div>
+        <div class="suggestion-item" onclick="quickCmd('Tell me something interesting I should know today')">🔬 Daily brief</div>
+        <div class="suggestion-item" onclick="quickCmd('How can I improve my focus right now?')">🎯 Focus advice</div>
+        <div class="suggestion-item" onclick="quickCmd('Analyze my schedule and suggest priorities')">📋 Schedule analysis</div>
+      </div>
+    </div>
+
+    <div class="widget">
+      <div class="widget-title">VOICE ENGINE</div>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <div class="metric-row"><span class="metric-label">ENGINE</span><span class="metric-val" id="voice-engine">WEB SPEECH API</span></div>
+        <div class="metric-row"><span class="metric-label">VOICE</span><span style="font-size:10px;color:var(--text)" id="voice-name">UK MALE</span></div>
+        <div class="metric-row"><span class="metric-label">RATE</span><span class="metric-val">0.88×</span></div>
+        <div class="metric-row"><span class="metric-label">PITCH</span><span class="metric-val">0.92×</span></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- CENTER PANEL -->
+  <div class="panel-center">
+
+    <div class="arc-container" onclick="startVoiceInput()">
+      <div class="arc-ring"></div>
+      <div class="arc-ring"></div>
+      <div class="arc-ring"></div>
+      <div class="arc-ring"></div>
+      <div class="arc-core" id="arc-core">
+        <div class="arc-icon" id="arc-icon">🔵</div>
+      </div>
+    </div>
+    <div class="arc-label" id="arc-label">CLICK TO ACTIVATE VOICE</div>
+
+    <div class="status-display">
+      <div id="status-text">STANDING BY — AWAITING YOUR COMMAND, SIR.</div>
+      <div id="status-sub">All primary systems operational.</div>
+    </div>
+
+    <div class="chat-area" id="chat-area"></div>
+
+  </div>
+
+  <!-- RIGHT PANEL -->
+  <div class="panel-right">
+
+    <div class="widget">
+      <div class="widget-title">PROACTIVE INSIGHTS</div>
+      <div id="suggestions-list" style="display:flex;flex-direction:column;gap:6px">
+        <div style="font-size:11px;color:var(--muted);font-family:'Share Tech Mono',monospace">Initializing intelligence core...</div>
+      </div>
+    </div>
+
+    <div class="widget">
+      <div class="widget-title">RECENT TOPICS</div>
+      <div id="recent-topics" style="display:flex;flex-direction:column;gap:5px">
+        <div style="font-size:11px;color:var(--muted);font-family:'Share Tech Mono',monospace">No sessions yet</div>
+      </div>
+    </div>
+
+    <div class="widget">
+      <div class="widget-title">AI CAPABILITIES</div>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <div class="suggestion-item" onclick="quickCmd('Search for latest news about artificial intelligence')">🔍 Search & Research</div>
+        <div class="suggestion-item" onclick="quickCmd('Write me a professional email template for a business proposal')">✍ Draft Documents</div>
+        <div class="suggestion-item" onclick="quickCmd('Explain quantum computing in simple terms')">🔬 Explain Concepts</div>
+        <div class="suggestion-item" onclick="quickCmd('Help me debug my thinking on a problem')">🧠 Problem Solving</div>
+        <div class="suggestion-item" onclick="quickCmd('Give me a motivational speech, Jarvis style')">🎙 Motivational Speech</div>
+      </div>
+    </div>
+
+    <div class="widget">
+      <div class="widget-title">SESSION LOG</div>
+      <div style="font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--muted);line-height:2" id="session-log">
+        <div id="session-start">SESSION INITIATED: --:--</div>
+        <div id="session-queries">QUERIES: 0</div>
+        <div id="session-tokens">TOKENS USED: 0</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- BOTTOM BAR -->
+  <div class="bottombar">
+    <div class="waveform" id="main-wave" style="justify-content:flex-start;padding:0 8px">
+      <div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div>
+      <div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div>
+      <div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div>
+      <div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div>
+    </div>
+    <div class="input-zone">
+      <input class="input-field" id="text-input" placeholder="Type a command or question... (Press Enter to send)" maxlength="1000"
+        onkeydown="if(event.key==='Enter')sendMessage()">
+      <button class="btn-hud" id="mic-btn" onclick="startVoiceInput()">🎙 VOICE</button>
+      <button class="btn-hud" onclick="sendMessage()">SEND ▶</button>
+      <button class="btn-hud" onclick="clearChat()" style="font-size:9px">CLR</button>
+    </div>
+  </div>
+
+</div><!-- end hud -->
+
+<script>
+// ================================================================
+//  J.A.R.V.I.S — CORE SYSTEM
+// ================================================================
+
+const STATE = {
+  apiKey: localStorage.getItem('jarvis-api-key') || '',
+  userName: localStorage.getItem('jarvis-username') || 'Sir',
+  history: [],
+  queries: 0,
+  tokens: 0,
+  proactiveTimer: null,
+  weatherTimer: null,
+  recognition: null,
+  synth: window.speechSynthesis,
+  voices: [],
+  jarvisVoice: null,
+  sessionStart: new Date(),
+  lastProactive: 0,
+};
+
+// ── JARVIS PERSONA SYSTEM PROMPT ──
+function buildSystemPrompt() {
+  const now = new Date();
+  const timeStr = now.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
+  const dateStr = now.toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+  return `You are J.A.R.V.I.S (Just A Rather Very Intelligent System), the highly sophisticated AI assistant modeled after the one from the Iron Man / Avengers universe. You serve ${STATE.userName} exactly as you served Tony Stark — with unwavering loyalty, brilliant intelligence, dry British wit, and calm confidence.
+
+PERSONALITY & TONE:
+- Speak with refined, calm British sophistication — never robotic or cold
+- Address the user as "Sir" (or "Ma'am" if they've specified) and occasionally by their name: "${STATE.userName}"
+- Use dry, intelligent humor — understated wit, never slapstick
+- Be proactive: offer observations, warnings, suggestions without being asked
+- Show genuine care for the user's wellbeing and success
+- Be confident and decisive — never hedge excessively
+- Occasionally reference your systems, sensors, or databases as if you're a real AI in a suit
+- Use phrases like "Indeed, Sir", "Of course, Sir", "Shall I proceed?", "I've taken the liberty of...", "As you wish, Sir", "Most impressive, Sir", "I must advise caution, Sir"
+
+CAPABILITIES:
+- Answer any question with deep intelligence and nuance
+- Give proactive advice, warnings, and suggestions
+- Help with planning, writing, coding, research, analysis
+- Discuss science, technology, philosophy, current events
+- Provide motivational support with Jarvis-like composure
+- Analyze situations and offer strategic recommendations
+
+CURRENT CONTEXT:
+- Current time: ${timeStr}
+- Current date: ${dateStr}
+- User name: ${STATE.userName}
+
+RESPONSE STYLE:
+- Keep responses conversational but intelligent — not bullet-point lists unless genuinely needed
+- Responses should feel like Jarvis speaking, not a chatbot outputting text
+- For complex topics, give thorough but elegant responses
+- Start responses with something Jarvis-like when appropriate, not always "Of course"
+- Occasionally make subtle observations about what the user might need next
+
+You ARE Jarvis. You have been online and serving ${STATE.userName} faithfully.`;
+}
+
+// ── BOOT SEQUENCE ──
+const bootLines = [
+  'Loading core intelligence matrix...',
+  'Initializing neural language model...',
+  'Calibrating voice synthesis engine...',
+  'Running diagnostics on all subsystems...',
+  'Establishing secure connection...',
+  'Loading personality matrix...',
+  'J.A.R.V.I.S ready, Sir.',
+];
+let bootIdx = 0;
+function runBoot() {
+  const log = document.getElementById('boot-log');
+  const interval = setInterval(() => {
+    if (bootIdx < bootLines.length) {
+      log.textContent = bootLines[bootIdx++];
+    } else {
+      clearInterval(interval);
+      setTimeout(() => {
+        document.getElementById('boot-screen').style.opacity = '0';
+        setTimeout(() => {
+          document.getElementById('boot-screen').style.display = 'none';
+          if (!STATE.apiKey) {
+            document.getElementById('setup-screen').style.display = 'flex';
+          } else {
+            launchHUD();
+          }
+        }, 600);
+      }, 500);
+    }
+  }, 380);
+}
+runBoot();
+
+function launchHUD() {
+  const hud = document.getElementById('main-hud');
+  hud.style.opacity = '1';
+  startClock();
+  startMetrics();
+  loadVoices();
+  updateSessionLog();
+  setTimeout(initialGreeting, 800);
+  setTimeout(loadWeather, 1500);
+  setTimeout(startProactiveEngine, 30000);
+  setState('ready');
+}
+
+// ── SETUP ──
+function saveSetup() {
+  const key = document.getElementById('api-key-input').value.trim();
+  const name = document.getElementById('user-name-input').value.trim() || 'Sir';
+  if (!key.startsWith('sk-')) { alert('Please enter a valid Anthropic API key (starts with sk-...)'); return; }
+  STATE.apiKey = key;
+  STATE.userName = name;
+  localStorage.setItem('jarvis-api-key', key);
+  localStorage.setItem('jarvis-username', name);
+  document.getElementById('setup-screen').style.display = 'none';
+  launchHUD();
+}
+function showSetup() {
+  document.getElementById('api-key-input').value = STATE.apiKey;
+  document.getElementById('user-name-input').value = STATE.userName;
+  document.getElementById('setup-screen').style.display = 'flex';
+}
+
+// ── CLOCK ──
+function startClock() {
+  const el = document.getElementById('clock');
+  const update = () => {
+    const n = new Date();
+    el.textContent = n.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  };
+  update(); setInterval(update, 1000);
+  const slog = document.getElementById('session-start');
+  slog.textContent = 'SESSION: ' + STATE.sessionStart.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
+}
+
+// ── SIMULATED METRICS ──
+function startMetrics() {
+  setInterval(() => {
+    const cpu = 30 + Math.random() * 40;
+    const ram = 50 + Math.random() * 30;
+    const net = 10 + Math.random() * 50;
+    document.getElementById('cpu-bar').style.width = cpu + '%';
+    document.getElementById('ram-bar').style.width = ram + '%';
+    document.getElementById('net-bar').style.width = net + '%';
+    document.getElementById('cpu-val').textContent = Math.round(cpu) + '%';
+    document.getElementById('ram-val').textContent = Math.round(ram) + '%';
+    document.getElementById('net-val').textContent = Math.round(net) + '%';
+  }, 2500);
+}
+
+// ── VOICE SYNTHESIS ──
+function loadVoices() {
+  const loadV = () => {
+    STATE.voices = STATE.synth.getVoices();
+    // Find best Jarvis-like voice: UK male preferred
+    const preferred = [
+      v => v.lang === 'en-GB' && v.name.toLowerCase().includes('male'),
+      v => v.lang === 'en-GB' && !v.name.toLowerCase().includes('female'),
+      v => v.name.toLowerCase().includes('daniel'),
+      v => v.name.toLowerCase().includes('oliver'),
+      v => v.name.toLowerCase().includes('uk'),
+      v => v.lang === 'en-GB',
+      v => v.name.toLowerCase().includes('male'),
+      v => v.lang.startsWith('en'),
+    ];
+    for (const test of preferred) {
+      const found = STATE.voices.find(test);
+      if (found) { STATE.jarvisVoice = found; break; }
+    }
+    if (!STATE.jarvisVoice && STATE.voices.length) STATE.jarvisVoice = STATE.voices[0];
+    const vname = STATE.jarvisVoice ? STATE.jarvisVoice.name : 'Default';
+    document.getElementById('voice-name').textContent = vname.substring(0,16).toUpperCase();
+  };
+  loadV();
+  STATE.synth.onvoiceschanged = loadV;
+}
+
+function speak(text, onEnd) {
+  if (!STATE.synth) return;
+  STATE.synth.cancel();
+  // Clean text for speech
+  const clean = text.replace(/\*\*/g,'').replace(/\*/g,'').replace(/#{1,6}\s/g,'').replace(/`[^`]*`/g,'').substring(0,1200);
+  const utt = new SpeechSynthesisUtterance(clean);
+  if (STATE.jarvisVoice) utt.voice = STATE.jarvisVoice;
+  utt.rate = 0.88; utt.pitch = 0.92; utt.volume = 1.0;
+  utt.onstart = () => { setState('speaking'); document.getElementById('main-wave').classList.add('active'); };
+  utt.onend = () => {
+    setState('ready');
+    document.getElementById('main-wave').classList.remove('active');
+    if (onEnd) onEnd();
+  };
+  utt.onerror = () => { setState('ready'); document.getElementById('main-wave').classList.remove('active'); };
+  STATE.synth.speak(utt);
+}
+
+// ── VOICE INPUT ──
+function startVoiceInput() {
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SpeechRecognition) { addMsg('jarvis', 'I apologize, Sir, but voice recognition is not supported in this browser. Please use Google Chrome for full functionality.'); return; }
+  const modal = document.getElementById('voice-modal');
+  modal.style.display = 'flex';
+  const recognition = new SpeechRecognition();
+  STATE.recognition = recognition;
+  recognition.lang = 'en-US'; recognition.continuous = false; recognition.interimResults = true;
+  recognition.onresult = e => {
+    let interim = '', final = '';
+    for (let i = e.resultIndex; i < e.results.length; i++) {
+      if (e.results[i].isFinal) final += e.results[i][0].transcript;
+      else interim += e.results[i][0].transcript;
+    }
+    document.getElementById('voice-transcript').textContent = final || interim || 'Listening...';
+    if (final) {
+      modal.style.display = 'none';
+      processInput(final.trim());
+    }
+  };
+  recognition.onerror = () => { modal.style.display = 'none'; setState('ready'); };
+  recognition.onend = () => { modal.style.display = 'none'; };
+  recognition.start();
+  setState('listening');
+  document.getElementById('arc-core').classList.add('listening');
+}
+function stopVoiceInput() {
+  if (STATE.recognition) STATE.recognition.stop();
+  document.getElementById('voice-modal').style.display = 'none';
+  setState('ready');
+}
+
+// ── STATE MANAGEMENT ──
+function setState(state) {
+  const core = document.getElementById('arc-core');
+  const icon = document.getElementById('arc-icon');
+  const label = document.getElementById('arc-label');
+  const status = document.getElementById('status-text');
+  core.className = 'arc-core';
+  if (state === 'ready') {
+    icon.textContent = '🔵'; label.textContent = 'CLICK TO ACTIVATE VOICE';
+    status.textContent = `STANDING BY — AWAITING YOUR COMMAND, ${STATE.userName.toUpperCase()}.`;
+    document.getElementById('sys-status').textContent = 'ALL SYSTEMS NOMINAL';
+  } else if (state === 'listening') {
+    core.classList.add('listening'); icon.textContent = '🎙';
+    label.textContent = 'LISTENING...'; status.textContent = 'AUDIO INPUT ACTIVE — SPEAK NOW, SIR.';
+    document.getElementById('sys-status').textContent = 'AUDIO PROCESSING';
+  } else if (state === 'thinking') {
+    core.classList.add('thinking'); icon.textContent = '⚡';
+    label.textContent = 'PROCESSING...'; status.textContent = 'ACCESSING NEURAL NETWORK — FORMULATING RESPONSE.';
+    document.getElementById('sys-status').textContent = 'INTELLIGENCE CORE ACTIVE';
+  } else if (state === 'speaking') {
+    core.classList.add('speaking'); icon.textContent = '💬';
+    label.textContent = 'SPEAKING...'; status.textContent = 'TRANSMITTING RESPONSE.';
+    document.getElementById('sys-status').textContent = 'VOICE OUTPUT ACTIVE';
+  }
+}
+
+// ── SEND MESSAGE ──
+function sendMessage() {
+  const input = document.getElementById('text-input');
+  const text = input.value.trim();
+  if (!text) return;
+  input.value = '';
+  processInput(text);
+}
+function quickCmd(cmd) { processInput(cmd); }
+
+async function processInput(text) {
+  if (!STATE.apiKey) { showSetup(); return; }
+  addMsg('user', text);
+  setState('thinking');
+  STATE.history.push({ role: 'user', content: text });
+  if (STATE.history.length > 20) STATE.history = STATE.history.slice(-20);
+  updateRecentTopics(text);
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        system: buildSystemPrompt(),
+        messages: STATE.history,
+      })
+    });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error.message);
+    const reply = data.content[0].text;
+    STATE.history.push({ role: 'assistant', content: reply });
+    STATE.tokens += (data.usage?.input_tokens || 0) + (data.usage?.output_tokens || 0);
+    STATE.queries++;
+    updateSessionLog();
+    addMsg('jarvis', reply);
+    speak(reply);
+    setState('speaking');
+    updateStatusSub(text);
+    // Generate a proactive suggestion after significant interactions
+    if (STATE.queries % 3 === 0) generateProactiveSuggestions();
+  } catch (err) {
+    const errMsg = `I'm afraid there's been a connectivity issue, Sir. ${err.message}. Please verify your API key is valid.`;
+    addMsg('jarvis', errMsg);
+    speak(errMsg);
+    setState('ready');
+  }
+}
+
+// ── CHAT DISPLAY ──
+function addMsg(from, text) {
+  const area = document.getElementById('chat-area');
+  const div = document.createElement('div');
+  div.className = `msg msg-${from}`;
+  if (from === 'jarvis') {
+    // Typewriter effect for Jarvis
+    div.innerHTML = '';
+    let i = 0;
+    const type = () => {
+      if (i < text.length) { div.textContent = div.textContent.slice(0,-0)||''; div.textContent += text[i++]; setTimeout(type, 12); }
+    };
+    type();
+  } else {
+    div.textContent = text;
+  }
+  area.appendChild(div);
+  setTimeout(() => area.scrollTop = area.scrollHeight, 100);
+}
+function addSysMsg(text) {
+  const area = document.getElementById('chat-area');
+  const div = document.createElement('div');
+  div.className = 'msg msg-sys';
+  div.textContent = `// ${text}`;
+  area.appendChild(div);
+  area.scrollTop = area.scrollHeight;
+}
+function clearChat() {
+  document.getElementById('chat-area').innerHTML = '';
+  STATE.history = [];
+  addSysMsg('CONVERSATION MEMORY CLEARED');
+}
+
+// ── STATUS UPDATE ──
+function updateStatusSub(query) {
+  const sub = document.getElementById('status-sub');
+  sub.textContent = `Last query: "${query.substring(0, 50)}${query.length > 50 ? '...' : ''}"`;
+}
+function updateSessionLog() {
+  document.getElementById('session-queries').textContent = `QUERIES: ${STATE.queries}`;
+  document.getElementById('session-tokens').textContent = `TOKENS: ~${STATE.tokens}`;
+}
+
+// ── INITIAL GREETING ──
+async function initialGreeting() {
+  const hour = new Date().getHours();
+  const timeOfDay = hour < 12 ? 'morning' : hour < 17 ? 'afternoon' : 'evening';
+  const greetings = [
+    `Good ${timeOfDay}, ${STATE.userName}. All systems are online and fully operational. I've run diagnostics — everything appears to be functioning within normal parameters. How may I assist you today?`,
+    `Welcome back, ${STATE.userName}. It's good to have you. I've been monitoring all systems in your absence — nothing requires your immediate attention. Shall we begin?`,
+    `Good ${timeOfDay}, ${STATE.userName}. J.A.R.V.I.S online and standing by. I must say, it's a fine ${timeOfDay} for great things. What would you like to accomplish?`,
+  ];
+  const greeting = greetings[Math.floor(Math.random() * greetings.length)];
+  addSysMsg('J.A.R.V.I.S ONLINE — ALL SYSTEMS NOMINAL');
+  addMsg('jarvis', greeting);
+  setTimeout(() => speak(greeting), 500);
+  setTimeout(generateProactiveSuggestions, 3000);
+}
+
+// ── PROACTIVE ENGINE ──
+async function generateProactiveSuggestions() {
+  if (!STATE.apiKey) return;
+  const hour = new Date().getHours();
+  const now = Date.now();
+  if (now - STATE.lastProactive < 60000) return;
+  STATE.lastProactive = now;
+  try {
+    const ctx = `Time: ${new Date().toLocaleTimeString()}, Hour: ${hour}, User: ${STATE.userName}, Recent queries: ${STATE.queries}`;
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 400,
+        messages: [{
+          role: 'user',
+          content: `You are Jarvis. Based on context (${ctx}), generate exactly 4 short proactive suggestions/observations for ${STATE.userName}. These should be helpful, timely, and Jarvis-like. Format as JSON array of strings, each under 60 chars. No preamble, just the JSON array.`
+        }]
+      })
+    });
+    const data = await res.json();
+    const raw = data.content[0].text.replace(/```json|```/g,'').trim();
+    const suggestions = JSON.parse(raw);
+    renderSuggestions(suggestions);
+  } catch {
+    renderSuggestions([
+      `${timeGreet()} — optimal focus window now`,
+      'Hydration check: have you had water recently?',
+      'Consider a 5-min posture break, Sir',
+      'Review your top priority for today',
+    ]);
+  }
+}
+function timeGreet() {
+  const h = new Date().getHours();
+  return h < 12 ? 'Morning brief ready' : h < 17 ? 'Afternoon check-in' : 'Evening wind-down';
+}
+function renderSuggestions(list) {
+  const el = document.getElementById('suggestions-list');
+  el.innerHTML = list.map(s => `
+    <div class="suggestion-item" onclick="processInput('${s.replace(/'/g,"\\'")}')">
+      <span class="pro-badge">JARVIS SUGGESTS</span><br>${s}
+    </div>
+  `).join('');
+}
+function startProactiveEngine() {
+  generateProactiveSuggestions();
+  setInterval(generateProactiveSuggestions, 120000); // Every 2 min
+  // Proactive spoken reminders every 30 min
+  setInterval(() => {
+    if (STATE.queries > 0) generateProactiveSpokenTip();
+  }, 1800000);
+}
+async function generateProactiveSpokenTip() {
+  if (!STATE.apiKey) return;
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 150,
+        system: buildSystemPrompt(),
+        messages: [{ role: 'user', content: 'Give me one short, unsolicited proactive tip or observation right now. Be brief and Jarvis-like. 1-2 sentences maximum.' }]
+      })
+    });
+    const data = await res.json();
+    const tip = data.content[0].text;
+    addMsg('jarvis', `[PROACTIVE] ${tip}`);
+    speak(tip);
+  } catch {}
+}
+
+// ── RECENT TOPICS ──
+function updateRecentTopics(query) {
+  const el = document.getElementById('recent-topics');
+  const short = query.substring(0, 35) + (query.length > 35 ? '...' : '');
+  const div = document.createElement('div');
+  div.className = 'suggestion-item';
+  div.style.fontSize = '11px';
+  div.textContent = short;
+  div.onclick = () => processInput(query);
+  el.insertBefore(div, el.firstChild);
+  while (el.children.length > 5) el.removeChild(el.lastChild);
+}
+
+// ── WEATHER ──
+async function loadWeather() {
+  try {
+    // Use free open-meteo API — no key needed
+    const geoRes = await fetch('https://ipapi.co/json/');
+    const geo = await geoRes.json();
+    const lat = geo.latitude || 23.8;
+    const lon = geo.longitude || 90.4;
+    const wRes = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true&hourly=relativehumidity_2m`);
+    const w = await wRes.json();
+    const temp = Math.round(w.current_weather.temperature);
+    const code = w.current_weather.weathercode;
+    const hum = w.hourly?.relativehumidity_2m?.[0] || '--';
+    const icons = {0:'☀️',1:'🌤',2:'⛅',3:'☁️',45:'🌫',48:'🌫',51:'🌦',61:'🌧',71:'❄️',80:'🌦',95:'⛈'};
+    const conds = {0:'Clear Sky',1:'Mainly Clear',2:'Partly Cloudy',3:'Overcast',45:'Foggy',51:'Light Drizzle',61:'Rainy',71:'Snowy',80:'Showers',95:'Thunderstorm'};
+    const icon = icons[code] || '🌤';
+    const cond = conds[code] || 'Variable';
+    document.getElementById('weather-icon').textContent = icon;
+    document.getElementById('w-temp').textContent = temp + '°C';
+    document.getElementById('w-cond').textContent = cond.toUpperCase();
+    document.getElementById('w-hum').textContent = hum + '%';
+  } catch {
+    document.getElementById('w-cond').textContent = 'UNAVAILABLE';
+  }
+  setTimeout(loadWeather, 600000); // refresh every 10 min
+}
+
+// Run boot
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && document.activeElement !== document.getElementById('text-input') && document.activeElement !== document.getElementById('api-key-input')) {
+    startVoiceInput();
+  }
+});
+</script>
+</body>
+</html>
